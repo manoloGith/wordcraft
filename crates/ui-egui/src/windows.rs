@@ -104,7 +104,8 @@ impl Windows {
         let mut viewports = Viewports::new(Frame::Desktop);
         viewports.set_root(Some(id));
         Windows {
-            native: cfg!(not(target_arch = "wasm32")),
+            // One window on the web and on Android (an activity has one window), as in the web app.
+            native: cfg!(not(any(target_arch = "wasm32", target_os = "android"))),
             list,
             viewports: Some(viewports),
             open: vec![Window { key: 1, id: Some(id), doc, ui: None, requests: Vec::new(), title: String::new(), view: None }],

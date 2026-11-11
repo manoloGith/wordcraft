@@ -82,8 +82,13 @@ impl WordApp {
 /// for Updates shows.
 #[cfg(not(target_arch = "wasm32"))]
 fn refused_check() -> craft_update::updater::CheckSource {
-    let why = tl!("Updates are off in this window: WordCraft was started with another program's AppImage settings. Start WordCraft from its own menu entry to update it.")
-        .to_string();
+    // Android apps are updated by the store or app installer they came from, never by themselves.
+    let why = if cfg!(target_os = "android") {
+        tl!("Updates for this app come from the store or app installer it was installed with.")
+    } else {
+        tl!("Updates are off in this window: WordCraft was started with another program's AppImage settings. Start WordCraft from its own menu entry to update it.")
+    }
+    .to_string();
     std::sync::Arc::new(move || Err(why.clone()))
 }
 

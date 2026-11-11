@@ -143,8 +143,10 @@ fn candidates(hans: bool, korean: bool) -> Vec<&'static str> {
                 "wenquanyi/wqy-zenhei/wqy-zenhei.ttc",
                 "truetype/wqy/wqy-zenhei.ttc",
                 "truetype/droid/DroidSansFallbackFull.ttf",
+                // Android, straight in /system/fonts.
+                "NotoSansCJK-Regular.ttc",
             ],
-            &["noto-cjk/NotoSansCJKjp-Regular.otf", "opentype/noto/NotoSansCJKjp-Regular.otf"],
+            &["noto-cjk/NotoSansCJKjp-Regular.otf", "opentype/noto/NotoSansCJKjp-Regular.otf", "NotoSansCJK-Regular.ttc"],
             &[
                 "noto-cjk/NotoSansCJKkr-Regular.otf",
                 "opentype/noto/NotoSansCJKkr-Regular.otf",
@@ -152,6 +154,7 @@ fn candidates(hans: bool, korean: bool) -> Vec<&'static str> {
                 "adobe-source-han-sans/SourceHanSansK-Regular.otf",
                 "opentype/adobe-source-han-sans/SourceHanSansK-Regular.otf",
                 "truetype/nanum/NanumGothic.ttf",
+                "NotoSansCJK-Regular.ttc",
             ],
         )
     };
@@ -234,6 +237,9 @@ fn arabic_candidates() -> &'static [&'static str] {
             "truetype/noto/NotoNaskhArabic-Regular.ttf",
             "google-noto/NotoNaskhArabic-Regular.ttf",
             "vazirmatn/Vazirmatn-Regular.ttf",
+            // Android, straight in /system/fonts.
+            "NotoNaskhArabic-Regular.ttf",
+            "NotoSansArabic-Regular.ttf",
             "truetype/dejavu/DejaVuSans.ttf",
             "dejavu/DejaVuSans.ttf",
             "TTF/DejaVuSans.ttf",
