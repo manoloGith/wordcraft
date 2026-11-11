@@ -337,6 +337,40 @@ mod tests {
         assert!(a.sent_title.starts_with("Document1"), "{}", a.sent_title);
     }
 
+    /// A host's strip below the ribbon (Android's document tabs) is drawn under the ribbon with
+    /// the app, and what it runs is the app's own command: here a button that shows the other
+    /// document, as a tab does.
+    #[test]
+    fn the_host_strip_below_the_ribbon_draws_there_and_switches_documents() {
+        use egui_kittest::kittest::Queryable;
+        let mut a = app();
+        a.windows.single();
+        a.run("text.insert", json!({"text": "First draft"})).unwrap();
+        let first = a.session.document_id();
+        a.run("file.new", json!({})).unwrap();
+        a.services.below_ribbon = Some(Box::new(|app: &mut WordApp, ui: &mut egui::Ui| {
+            egui::Panel::top("host_strip").show(ui, |ui| {
+                let other = app.session.documents().into_iter().find(|d| !d.active).map(|d| d.id);
+                if ui.button("Show the other document").clicked()
+                    && let Some(id) = other
+                {
+                    app.run("view.switchWindows", json!({"id": id})).unwrap();
+                }
+            });
+        }));
+        let mut h = harness(a);
+        h.run_steps(2);
+        let strip = h.get_by_label("Show the other document").rect();
+        let ribbon = h.query_all_by_label("Insert").map(|n| n.rect().bottom()).fold(f32::MIN, f32::max);
+        assert!(ribbon > 0.0 && strip.top() >= ribbon, "the strip ({strip:?}) is below the ribbon (bottom {ribbon})");
+        assert_ne!(h.state().session.document_id(), first);
+        h.get_by_label("Show the other document").click();
+        h.run_steps(2);
+        assert_eq!(h.state().session.document_id(), first, "the strip's command showed the first document");
+        assert_eq!(text(h.state()), "First draft");
+        assert!(h.state().services.below_ribbon.is_some(), "the hook is kept for the next frame");
+    }
+
     /// Close with two documents open asks about the shown one's changes; after Don't Save the
     /// other one shows.
     #[test]

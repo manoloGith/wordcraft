@@ -63,6 +63,16 @@ impl WordApp {
         }
     }
 
+    /// The host's strip below the ribbon ([`Services::below_ribbon`](crate::Services::below_ribbon)).
+    /// The hook is taken out while it draws, as it gets the app, and put back unless it set
+    /// another.
+    fn below_ribbon(&mut self, ui: &mut egui::Ui) {
+        if let Some(hook) = self.services.below_ribbon.take() {
+            hook(self, ui);
+            self.services.below_ribbon.get_or_insert(hook);
+        }
+    }
+
     /// Draw the File page, the empty-window chrome, or the normal document window.
     pub(super) fn paint_window(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, t: theme::Tokens) {
         let window = self.windows.shown();
@@ -73,6 +83,7 @@ impl WordApp {
             // No document open (#1129): the ribbon greyed out but for Help, and no page.
             chrome::title_bar(self, ui);
             ribbon::show(self, ui);
+            self.below_ribbon(ui);
             chrome::status_bar(self, ui);
             egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.canvas)).show(ui, |_| {});
         } else {
@@ -87,6 +98,10 @@ impl WordApp {
                     return;
                 }
                 ribbon::show(self, ui);
+                if moved(self) {
+                    return;
+                }
+                self.below_ribbon(ui);
                 if moved(self) {
                     return;
                 }

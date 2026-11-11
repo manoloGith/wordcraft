@@ -103,7 +103,16 @@ pub struct Services {
     /// used while File › Options names none. File › New lists personal templates from it and Save
     /// as Word Template starts in it. `None` (web) hides personal templates.
     pub templates_dir: Option<std::path::PathBuf>,
+    /// The host's own strip right below the ribbon, across the window (Android draws its
+    /// document tabs there, for the documents its one window shows). Drawn with the app, so it
+    /// can show and run what the app does: a strip that switches or closes a document does so
+    /// with the app's commands (`view.switchWindows`, `file.close`). `None` (desktop, web):
+    /// nothing is drawn.
+    pub below_ribbon: Option<BelowRibbonFn>,
 }
+
+/// [`Services::below_ribbon`]: draws in the window's `Ui` after the ribbon.
+pub type BelowRibbonFn = Box<dyn Fn(&mut WordApp, &mut egui::Ui)>;
 
 /// Files delivered asynchronously.
 pub type Inbox = std::sync::Arc<std::sync::Mutex<Vec<(String, Vec<u8>)>>>;
