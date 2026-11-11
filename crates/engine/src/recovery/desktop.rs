@@ -9,6 +9,11 @@ use std::time::{Duration, Instant};
 use wordcraft_doc::Document;
 
 const INTERVAL: Duration = Duration::from_secs(10);
+
+/// A time by which every open document's next copy is due (`Session::save_recovery_now`).
+pub(crate) fn due_all() -> Instant {
+    Instant::now() + INTERVAL
+}
 const MAX_BYTES: u64 = 256 << 20;
 const MAX_RECORDS: usize = 128;
 const MAX_FILES: usize = 16;
@@ -541,6 +546,10 @@ impl Recovery {
             })
             .map_err(|e| e.to_string())?;
         Ok(Self { tx, rx, documents: Vec::new(), ready: false, busy: true, error: None, alive: true, closed: Vec::new(), held: None })
+    }
+    /// Records of closed documents still to be deleted.
+    pub(crate) fn pending_discards(&self) -> usize {
+        self.closed.iter().filter(|(_, queued)| !queued).count()
     }
     fn queue(&mut self, job: Job) -> Result<(), String> {
         if !self.alive {

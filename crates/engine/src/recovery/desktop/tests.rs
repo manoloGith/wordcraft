@@ -619,3 +619,35 @@ fn finish_recovery_covers_every_open_document() {
     s.finish_recovery();
     assert_eq!(records(&t.0), [dirty]);
 }
+
+/// A host that can be ended without notice (Android) asks for the copies when the window loses
+/// focus: every dirty document's copy is on disk when `save_recovery_now` returns, long before
+/// its interval, and a document whose copy is current isn't written again.
+#[test]
+fn save_recovery_now_writes_every_dirty_document_before_returning() {
+    let t = Temp::new();
+    let mut s = session(&t.0);
+    for (i, text) in ["First draft", "Second draft", "Third draft"].into_iter().enumerate() {
+        if i > 0 {
+            s.run("file.new", &json!({})).unwrap();
+        }
+        s.run("text.insert", &json!({"text": text})).unwrap();
+    }
+    assert!(records(&t.0).is_empty(), "no copy before the interval");
+    s.save_recovery_now();
+    assert_eq!(records(&t.0).len(), 3, "every dirty document has its copy");
+    let rev = s.recovery_slot.revision;
+    assert_eq!(rev, Some(s.rev()), "the active document's copy holds its latest edit");
+    s.save_recovery_now();
+    assert_eq!(records(&t.0).len(), 3, "current copies are not written again");
+    assert!(!s.recovery_busy(), "nothing is left under way");
+}
+
+/// Without recovery (a headless session, preferences off) it does nothing.
+#[test]
+fn save_recovery_now_without_recovery_does_nothing() {
+    let mut s = Session::new(Document::new());
+    s.run("text.insert", &json!({"text": "Draft"})).unwrap();
+    s.save_recovery_now();
+    assert!(s.recovery_documents().is_empty());
+}

@@ -153,6 +153,40 @@ impl Session {
             self.recovery = Some(r);
         }
     }
+    /// Writes, now, the copy of every open document whose copy is out of date, without waiting
+    /// for their interval, and returns once they are on disk. For a host that can be ended without
+    /// notice right after the window loses focus (Android, whose window close button the app
+    /// can't intercept): the edits since the last copy are kept. Nothing happens without
+    /// recovery, or when every copy is current. Bounded: one job per open document and per
+    /// pending discard, each waited for.
+    pub fn save_recovery_now(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(mut r) = self.recovery.take() {
+            let jobs = self.recovery_slots().count().saturating_add(r.pending_discards()).saturating_add(1);
+            for _ in 0..jobs {
+                // The job under way (or the start-up scan) first: a new one can't be queued
+                // while the worker is busy.
+                if let Some(e) = r.receive(true) {
+                    self.apply_recovery(&mut r, e);
+                }
+                // As if every interval had passed.
+                if let Err(e) = r.tick(self.recovery_docs(), desktop::due_all()) {
+                    r.error = Some(e);
+                    break;
+                }
+                if !r.busy {
+                    break;
+                }
+            }
+            if let Some(e) = r.receive(true) {
+                self.apply_recovery(&mut r, e);
+            }
+            if let Some(e) = &r.error {
+                log::warn!("recovery: {e}");
+            }
+            self.recovery = Some(r);
+        }
+    }
     /// The user discarded the active document's unsaved changes without closing it (Don't Save
     /// when quitting): its recovery copy goes too, and another is made only after a further edit.
     pub fn discard_recovery_copy(&mut self) {
